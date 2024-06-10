@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-4#w%u9-ww3jl(fhbql(x84!3i1$0o=j!ud3s5#!-58n2r=a$4#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
+CSRF_FAILURE_VIEW = 'pages.views.csrf_failure'
 
 ALLOWED_HOSTS = [
     'localhost',
@@ -140,3 +140,7 @@ STATICFILES_DIRS = [
 LOGIN_REDIRECT_URL = 'blog:index'
 
 EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+
+MEDIA_ROOT = BASE_DIR / 'media'
+
+TIME_ZONE = 'Europe/Moscow'

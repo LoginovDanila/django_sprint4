@@ -4,9 +4,9 @@ from django.contrib.auth.forms import UserCreationForm
 from django.views.generic.edit import CreateView
 
 
-handler404 = 'core.views.page_not_found'
-handler403 = 'core.views.csrf_failure'
-handler500 = 'core.views.wrong_server'
+handler404 = 'pages.views.page_not_found'
+handler403 = 'pages.views.page_forbidden'
+handler500 = 'pages.views.server_error'
 
 urlpatterns = [
     path('admin/', admin.site.urls),

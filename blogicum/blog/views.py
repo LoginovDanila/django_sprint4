@@ -1,10 +1,15 @@
+from django.utils import timezone
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, render, redirect
 from django.db.models.functions import Now
 from blog.models import Post, Category, User, Comment
 from django.views.generic import (
-    CreateView, UpdateView, DeleteView, DetailView
+    CreateView,
+    UpdateView,
+    DeleteView,
+    DetailView,
+    ListView,
 )
-from django.core.paginator import Paginator
 from django.urls import reverse
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
@@ -17,7 +22,6 @@ from .forms import (
 
 
 # ФУНКЦИИ, МИКСИНЫ, КОНСТАНТЫ.
-
 class PostMixin:
 
     model = Post
@@ -63,6 +67,20 @@ class OnlyAuthorMixin(UserPassesTestMixin):
         return self.get_object().author == self.request.user
 
 
+class PostQuerySet:
+
+    def get_queryset(self):
+        return Post.objects.select_related(
+            'author',
+            'location',
+            'category'
+        ).filter(
+            is_published=True,
+            category__is_published=True,
+            pub_date__lte=timezone.now()
+        ).order_by('-pub_date').all()
+
+
 POST_LIST = Post.objects.select_related('category').filter(
     is_published=True,
     category__is_published=True,
@@ -72,7 +90,6 @@ CATEGORY_LIST = Category.objects.filter(is_published=True)
 
 
 # РАБОТА С ПОСТАМИ.
-
 class PostDetailView(DetailView):
 
     model = Post
@@ -116,7 +133,6 @@ class PostDeleteView(OnlyAuthorMixin,
 
 
 # РАБОТА С КОММЕНТАРИЯМИ.
-
 class CommentCreateView(LoginRequiredMixin, CreateView):
     model = Comment
     template_name = 'blog/comment.html'
@@ -141,7 +157,6 @@ class CommentDeleteView(CommentMixin, DeleteView):
 
 # РАБОТА С ПРОФИЛЕМ ПОЛЬЗОВАТЕЛЯ.
 
-
 class UserUpdateView(LoginRequiredMixin, UpdateView):
 
     model = User
@@ -155,46 +170,71 @@ class UserUpdateView(LoginRequiredMixin, UpdateView):
     def get_object(self):
         return self.request.user
 
+    def get_success_url(self):
+        return reverse(
+            'blog:profile',
+            kwargs={'username': self.request.user.username}
+        )
 
-def profile(request, username):
+
+class ProfileListView(PostQuerySet, ListView):
+    paginate_by = 10
     template_name = 'blog/profile.html'
-    profile = User.objects.get(username=username)
-    post_list = Post.objects.select_related(
-        'category').select_related(
-        'author').filter(
-        is_published=True,
-        category__is_published=True,
-        author__username=username)
-    paginator = Paginator(post_list, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    context = {
-        'page_obj': page_obj,
-        'profile': profile
-    }
-    return render(request, template_name, context)
+    model = Post
+
+    def get_object(self):
+        return get_object_or_404(User, username=self.kwargs['username'])
+
+    def get_queryset(self):
+        queryset = Post.objects
+        self.profile = get_object_or_404(User,
+                                         username=self.kwargs['username'])
+
+        queryset = queryset.filter(
+            author=self.profile
+        ).annotate(comment_count=Count('comments')).order_by(
+            '-pub_date')
+        if self.request.user != self.profile:
+            queryset = super().get_queryset().annotate(
+                comment_count=Count('comments'))
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        return dict(
+            **super().get_context_data(**kwargs),
+            profile=self.get_object()
+        )
 
 
 # НАРАБОТКИ ПРОШЛОГО СПРИНТА.
 
-def index(request):
+
+class PostListView(PostQuerySet, ListView):
+    paginate_by = 10
     template_name = 'blog/index.html'
-    paginator = Paginator(POST_LIST, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    context = {'page_obj': page_obj}
-    return render(request, template_name, context)
+
+    def get_queryset(self):
+        return super().get_queryset().annotate(comment_count=Count('comments'))
 
 
-def category_posts(request, category_slug):
+class CategoryListView(PostQuerySet, ListView):
     template_name = 'blog/category.html'
-    category_info = get_object_or_404(CATEGORY_LIST, slug=category_slug)
-    post_list = POST_LIST.filter(category__slug=category_slug)
-    paginator = Paginator(post_list, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    context = {
-        'page_obj': page_obj,
-        'category': category_info
-    }
-    return render(request, template_name, context)
+    context_object_name = 'post_list'
+    paginate_by = 10
+    category = None
+
+    def get_queryset(self):
+        self.category = get_object_or_404(
+            Category,
+            slug=self.kwargs['category_slug'],
+            is_published=True
+        )
+        return super().get_queryset().filter(
+            category__slug=self.kwargs['category_slug']
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['category'] = self.category
+        return context

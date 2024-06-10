@@ -1,5 +1,3 @@
-# from django.db import models
-# from django.contrib.auth import get_user_model
 from core.models import PublishedCreatedAtModel
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -63,7 +61,8 @@ class Post(PublishedCreatedAtModel):
         null=True,
         verbose_name='Категория'
     )
-    image = models.ImageField('Изображение', blank=True)
+    image = models.ImageField('Фото', upload_to='post_images',
+                              blank=True)
 
     class Meta:
         verbose_name = 'публикация'
@@ -73,11 +72,8 @@ class Post(PublishedCreatedAtModel):
     def __str__(self):
         return self.title
 
-    def comment_count(self):
-        return self.comments.count()
 
-
-class Comment(models.Model):
+class Comment(PublishedCreatedAtModel):
     text = models.TextField('Текст комментария')
     post = models.ForeignKey(
         Post,
@@ -88,4 +84,6 @@ class Comment(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
 
     class Meta:
+        verbose_name = "комментарий"
+        verbose_name_plural = "Комментарии"
         ordering = ('-created_at',)

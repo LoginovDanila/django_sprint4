@@ -6,16 +6,16 @@ app_name = 'blog'
 urlpatterns = [
     # ОБЩИЕ СТРАНИЦЫ
     path('',
-         views.index,
+         views.PostListView.as_view(),
          name='index'
          ),
     path('category/<slug:category_slug>/',
-         views.category_posts,
+         views.CategoryListView.as_view(),
          name='category_posts'
          ),
     # РАБОТА С ПРОФИЛЕМ
     path('profile/<username>/',
-         views.profile,
+         views.ProfileListView.as_view(),
          name='profile'
          ),
     path(
