@@ -137,10 +137,6 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static_dev',
 ]
 
-LOGIN_REDIRECT_URL = 'blog:index'
-
 EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
-
-MEDIA_ROOT = BASE_DIR / 'media'
 
 TIME_ZONE = 'Europe/Moscow'

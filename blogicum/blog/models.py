@@ -1,7 +1,6 @@
 from core.models import PublishedCreatedAtModel
-from django.db import models
 from django.contrib.auth import get_user_model
-
+from django.db import models
 
 User = get_user_model()
 
@@ -86,4 +85,4 @@ class Comment(PublishedCreatedAtModel):
     class Meta:
         verbose_name = "комментарий"
         verbose_name_plural = "Комментарии"
-        ordering = ('-created_at',)
+        ordering = ('created_at',)

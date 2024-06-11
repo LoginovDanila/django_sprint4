@@ -1,8 +1,7 @@
-from django.urls import include, path, reverse_lazy
 from django.contrib import admin
 from django.contrib.auth.forms import UserCreationForm
+from django.urls import include, path, reverse_lazy
 from django.views.generic.edit import CreateView
-
 
 handler404 = 'pages.views.page_not_found'
 handler403 = 'pages.views.page_forbidden'
