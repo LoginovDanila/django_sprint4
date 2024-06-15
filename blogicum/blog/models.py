@@ -1,6 +1,7 @@
-from core.models import PublishedCreatedAtModel
 from django.contrib.auth import get_user_model
 from django.db import models
+from core.constants import POST_ORDERING
+from core.models import PublishedCreatedAtModel
 
 User = get_user_model()
 
@@ -66,7 +67,7 @@ class Post(PublishedCreatedAtModel):
     class Meta:
         verbose_name = 'публикация'
         verbose_name_plural = 'Публикации'
-        ordering = ('-pub_date',)
+        ordering = (POST_ORDERING,)
 
     def __str__(self):
         return self.title
@@ -77,12 +78,18 @@ class Comment(PublishedCreatedAtModel):
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
-        related_name='comments',
+        verbose_name='Публикация',
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField('Дата и время создания комментария',
+                                      auto_now_add=True)
+    author = models.ForeignKey(User, on_delete=models.CASCADE,
+                               verbose_name='Автор комментария')
 
     class Meta:
         verbose_name = "комментарий"
         verbose_name_plural = "Комментарии"
         ordering = ('created_at',)
+        default_related_name = "comments"
+
+    def __str__(self):
+        return f"Комментарий {self.author}"

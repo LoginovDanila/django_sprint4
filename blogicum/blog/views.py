@@ -1,10 +1,8 @@
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count
-from django.db.models.functions import Now
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
-from django.utils import timezone
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -12,67 +10,19 @@ from django.views.generic import (
     ListView,
     UpdateView,
 )
-
 from blog.models import Category, Comment, Post, User
-
+from core.constants import POST_ORDERING
+from core.mixins import (
+    CommentMixin,
+    PostMixin,
+    AddAuthorMixin,
+    PostQuerySet,
+    OnlyAuthorMixin
+)
 from .forms import (
     CommentForm,
     PostForm,
 )
-
-
-# ФУНКЦИИ, МИКСИНЫ, КОНСТАНТЫ.
-class PostMixin:
-    model = Post
-    form_class = PostForm
-    template_name = "blog/create.html"
-
-
-class CommentMixin:
-    model = Comment
-    template_name = "blog/comment.html"
-    pk_url_kwarg = "comment_id"
-
-    def get_success_url(self):
-        return reverse("blog:post_detail", args=[self.kwargs["pk"]])
-
-    def dispatch(self, request, *args, **kwargs):
-        coment = get_object_or_404(Comment, id=self.kwargs["comment_id"])
-        if coment.author != self.request.user:
-            return redirect("blog:post_detail", pk=self.kwargs["pk"])
-        return super().dispatch(request, *args, **kwargs)
-
-
-class AddAuthorMixin:
-    def form_valid(self, form):
-        form.instance.author = self.request.user
-        return super().form_valid(form)
-
-
-class OnlyAuthorMixin(UserPassesTestMixin):
-    def test_func(self):
-        return self.get_object().author == self.request.user
-
-
-class PostQuerySet:
-    def get_queryset(self):
-        return (
-            Post.objects.select_related("author", "location", "category")
-            .filter(
-                is_published=True,
-                category__is_published=True,
-                pub_date__lte=timezone.now(),
-            )
-            .order_by("-pub_date")
-            .all()
-        )
-
-
-POST_LIST = Post.objects.select_related("category").filter(
-    is_published=True, category__is_published=True, pub_date__lte=Now()
-)
-
-CATEGORY_LIST = Category.objects.filter(is_published=True)
 
 
 # РАБОТА С ПОСТАМИ.
@@ -185,7 +135,7 @@ class ProfileListView(PostQuerySet, ListView):
         queryset = (
             queryset.filter(author=self.profile)
             .annotate(comment_count=Count("comments"))
-            .order_by("-pub_date")
+            .order_by(POST_ORDERING)
         )
         if self.request.user != self.profile:
             queryset = super().get_queryset().annotate(
